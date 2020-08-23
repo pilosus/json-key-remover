@@ -24,3 +24,4 @@ and inspired by [kured](https://github.com/weaveworks/kured/).
 - https://blog.golang.org/json
 - https://tutorialedge.net/golang/parsing-json-with-golang/
 - https://golang.org/doc/code.html
+- https://nilsmagnus.github.io/post/write-go-like-a-pro/

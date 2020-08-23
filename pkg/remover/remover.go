@@ -18,7 +18,6 @@ func FileExists(path string) bool {
 	return !stat.IsDir()
 }
 
-
 // ParseJSONFile unmarshal data from JSON file to a map
 func ParseJSONFile(path string) map[string]interface{} {
 	jsonFile, errFileOpen := os.Open(path)
@@ -43,7 +42,6 @@ func ParseJSONFile(path string) map[string]interface{} {
 	return jsonParsed
 }
 
-
 // WriteJSONFile writes map to a file
 func WriteJSONFile(path string, data map[string]interface{}) {
 	encoded, errMarshal := json.Marshal(data)
@@ -60,7 +58,6 @@ func WriteJSONFile(path string, data map[string]interface{}) {
 		os.Exit(1)
 	}
 }
-
 
 // DeleteKey deletes a key from the map recursively
 func DeleteKey(keyToDelete string, val reflect.Value) reflect.Value {
