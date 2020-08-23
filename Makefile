@@ -1,11 +1,41 @@
-.PHONY: build clean
+SHELL := /bin/bash
 
-VERSION=$(shell git describe --tags --long --dirty)
+# Go source files, ignore vendor directory
+SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+
+# Name of the executable (default is current directory name)
+TARGET := $(shell echo $${PWD\#\#*/})
+
+# Build version and time
+VERSION=$(shell git describe --tags --long --dirty --always)
 NOW=$(shell date +'%Y-%m-%dT%I:%M:%SZ')
 
+# Build flags
+LDFLAGS=-ldflags "-X main.version=$(VERSION) -X main.timestamp=$(NOW)"
+
+# Entrypoint files
+ENTRYPOINT=cmd/json-key-remover/*.go
+
+.PHONY: clean build test test-all lint fmt strict-check
+
 clean:
-	rm -f cmd/json-key-remover/json-key-remover
-	rm -rf ./json-key-remover
+	rm -rf ./$(TARGET)
 
 build:
-	go build -ldflags "-X main.version=$(VERSION) -X main.timestamp=$(NOW)" -o json-key-remover cmd/json-key-remover/*.go
+	go build $(LDFLAGS) -o $(TARGET) $(ENTRYPOINT)
+
+test:
+	go test -short ./...
+
+test-all:
+	go test -race ./...
+
+lint:
+	go vet ./...
+
+fmt:
+	gofmt -l -w $(SRC)
+
+strict-check:
+	@test -z $(shell gofmt -l . | tee /dev/stderr) || echo "[WARN] Fix formatting issues with 'make fmt'"
+	@for d in $$(go list ./... | grep -v /vendor/); do golint $${d}; done
