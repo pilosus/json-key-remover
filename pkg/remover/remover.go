@@ -2,7 +2,7 @@ package remover
 
 import (
 	"encoding/json"
-	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -23,7 +23,7 @@ func ParseJSONFile(path string) map[string]interface{} {
 	jsonFile, errFileOpen := os.Open(path)
 
 	if errFileOpen != nil {
-		fmt.Println(errFileOpen)
+		log.Error(errFileOpen)
 		os.Exit(1)
 	}
 
@@ -35,7 +35,7 @@ func ParseJSONFile(path string) map[string]interface{} {
 	errUnmarshal := json.Unmarshal([]byte(byteContent), &jsonParsed)
 
 	if errUnmarshal != nil {
-		fmt.Printf("Error: %s\n", errUnmarshal)
+		log.Error(errUnmarshal)
 		os.Exit(1)
 	}
 
@@ -47,14 +47,14 @@ func WriteJSONFile(path string, data map[string]interface{}) {
 	encoded, errMarshal := json.Marshal(data)
 
 	if errMarshal != nil {
-		fmt.Printf("Error: %s\n", errMarshal)
+		log.Error(errMarshal)
 		os.Exit(1)
 	}
 
 	errWrite := ioutil.WriteFile(path, encoded, 0644)
 
 	if errWrite != nil {
-		fmt.Printf("Error: %s\n", errWrite)
+		log.Error(errWrite)
 		os.Exit(1)
 	}
 }
