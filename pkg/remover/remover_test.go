@@ -2,6 +2,8 @@ package remover
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"reflect"
@@ -27,6 +29,46 @@ func TestFileExists(t *testing.T) {
 
 			if result != testCase.exists {
 				t.Errorf("got %v, expected %v", result, testCase.exists)
+			}
+		})
+	}
+}
+
+func TestWriteJSONFile(t *testing.T) {
+	inputData := map[string]interface{}{
+		"code":  200,
+		"value": []map[string]interface{}{{"facebook": true, "twitter": false}, {"facebook": false, "twitter": true}},
+	}
+
+	tempFile, tempErr := ioutil.TempFile("", "test.*.json")
+	if tempErr != nil {
+		log.Fatal(tempErr)
+	}
+	defer os.Remove(tempFile.Name())
+
+	var tests = []struct {
+		desc string
+		path string
+		data map[string]interface{}
+	}{
+		{"Nested map", tempFile.Name(), inputData},
+		{"Empty map", tempFile.Name(), map[string]interface{}{}},
+	}
+
+	for _, testCase := range tests {
+		testName := fmt.Sprintf("%s", testCase.desc)
+		t.Run(testName, func(t *testing.T) {
+			WriteJSONFile(testCase.path, testCase.data)
+
+			fileStat, fileErr := os.Stat(testCase.path)
+			if fileErr != nil {
+				log.Fatal(fileErr)
+			}
+			// get the fileSize
+			fileSize := fileStat.Size()
+
+			if fileSize == 0 {
+				t.Errorf("got %v bytes, expected positive value", fileSize)
 			}
 		})
 	}
@@ -74,4 +116,55 @@ func TestParseJSONFileFail(t *testing.T) {
 		return
 	}
 	t.Fatalf("process ran with err %v, expected exit status 1", err)
+}
+
+func TestDeleteKey(t *testing.T) {
+	inputData1 := map[string]interface{}{
+		"code":  200,
+		"value": []string{"one", "two"},
+	}
+	expectedData2 := map[string]interface{}{
+		"code": 200,
+	}
+	inputData3 := map[string]interface{}{
+		"code":  200,
+		"value": map[string]interface{}{"facebook": true, "twitter": false},
+	}
+	expectedData3 := map[string]interface{}{
+		"code":  200,
+		"value": map[string]interface{}{"twitter": false},
+	}
+	inputData4 := map[string]interface{}{
+		"code":  200,
+		"value": []map[string]interface{}{{"facebook": true, "twitter": false}, {"facebook": false, "twitter": true}},
+	}
+	expectedData4 := map[string]interface{}{
+		"code":  200,
+		"value": []map[string]interface{}{{"twitter": false}, {"twitter": true}},
+	}
+
+	var tests = []struct {
+		desc         string
+		inputDict    map[string]interface{}
+		keyToDelete  string
+		exceptedDict map[string]interface{}
+	}{
+		{"Delete non existent key", inputData1, "no_such_key", inputData1},
+		{"Delete root key", inputData1, "value", expectedData2},
+		{"Delete key in nested map", inputData3, "facebook", expectedData3},
+		{"Delete key in list of nested maps", inputData4, "facebook", expectedData4},
+	}
+
+	for _, testCase := range tests {
+		testName := fmt.Sprintf("%s", testCase.desc)
+		t.Run(testName, func(t *testing.T) {
+			jsonParsed := reflect.ValueOf(testCase.inputDict)
+			actualResult := DeleteKey(testCase.keyToDelete, jsonParsed)
+			actualDict := actualResult.Interface().(map[string]interface{})
+
+			if !reflect.DeepEqual(actualDict, testCase.exceptedDict) {
+				t.Errorf("got %v, expected %v", actualDict, testCase.exceptedDict)
+			}
+		})
+	}
 }
